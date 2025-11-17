@@ -4,6 +4,7 @@ from domain.loan_status import LoanStatus
 from domain.book_id import BookId
 from domain.user_id import UserId
 from domain.due_date import DueDate
+ 
 
 class Loan:
     def __init__(self, bookId: BookId, userId: UserId):
