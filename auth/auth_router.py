@@ -10,7 +10,6 @@ from auth.deps import get_current_active_user  # ← WAJIB DITAMBAHKAN
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# In-memory refresh token store: refresh_token -> username
 REFRESH_TOKENS: Dict[str, str] = {}
 
 class TokenResponse(BaseModel):
@@ -21,10 +20,6 @@ class TokenResponse(BaseModel):
 class RefreshRequest(BaseModel):
     refresh_token: str
 
-
-# ================================
-#            LOGIN
-# ================================
 @router.post("/login", response_model=TokenResponse)
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = get_user_by_username(form_data.username)
@@ -43,9 +38,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 
-# ================================
-#            REFRESH TOKEN
-# ================================
 @router.post("/refresh", response_model=TokenResponse)
 def refresh_token(req: RefreshRequest):
     rt = req.refresh_token
@@ -58,24 +50,18 @@ def refresh_token(req: RefreshRequest):
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    # generate new access token
     access_token = create_access_token(
         subject=str(user.user_id),
         role=user.role,
         expires_delta=timedelta(minutes=60)
     )
 
-    # ROTATE REFRESH TOKEN
     new_rt = create_refresh_token()
     del REFRESH_TOKENS[rt]
     REFRESH_TOKENS[new_rt] = user.username
 
     return TokenResponse(access_token=access_token, refresh_token=new_rt)
 
-
-# ================================
-#               LOGOUT
-# ================================
 @router.post("/logout")
 def logout(req: RefreshRequest):
     rt = req.refresh_token
@@ -83,10 +69,6 @@ def logout(req: RefreshRequest):
         del REFRESH_TOKENS[rt]
     return {"message": "Refresh token revoked"}
 
-
-# ================================
-#            GET PROFILE (AUTH)
-# ================================
 @router.get("/me")
 def me(current_user = Depends(get_current_active_user)):
     return {
