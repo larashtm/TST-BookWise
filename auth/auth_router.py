@@ -1,4 +1,3 @@
-# auth/auth_router.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -7,6 +6,7 @@ from typing import Dict
 
 from auth.users import get_user_by_username, verify_password
 from auth.jwt_handler import create_access_token, create_refresh_token
+from auth.deps import get_current_active_user  # ← WAJIB DITAMBAHKAN
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -21,43 +21,77 @@ class TokenResponse(BaseModel):
 class RefreshRequest(BaseModel):
     refresh_token: str
 
+
+# ================================
+#            LOGIN
+# ================================
 @router.post("/login", response_model=TokenResponse)
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = get_user_by_username(form_data.username)
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    # create tokens
-    access_token = create_access_token(subject=str(user.user_id), role=user.role, expires_delta=timedelta(minutes=60))
+
+    access_token = create_access_token(
+        subject=str(user.user_id),
+        role=user.role,
+        expires_delta=timedelta(minutes=60)
+    )
     refresh_token = create_refresh_token()
+
     REFRESH_TOKENS[refresh_token] = user.username
+
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
+
+# ================================
+#            REFRESH TOKEN
+# ================================
 @router.post("/refresh", response_model=TokenResponse)
 def refresh_token(req: RefreshRequest):
     rt = req.refresh_token
     username = REFRESH_TOKENS.get(rt)
+
     if not username:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
     user = get_user_by_username(username)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-    access_token = create_access_token(subject=str(user.user_id), role=user.role, expires_delta=timedelta(minutes=60))
-    # optionally rotate refresh token:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    # generate new access token
+    access_token = create_access_token(
+        subject=str(user.user_id),
+        role=user.role,
+        expires_delta=timedelta(minutes=60)
+    )
+
+    # ROTATE REFRESH TOKEN
     new_rt = create_refresh_token()
-    # delete old, save new
     del REFRESH_TOKENS[rt]
     REFRESH_TOKENS[new_rt] = user.username
+
     return TokenResponse(access_token=access_token, refresh_token=new_rt)
 
+
+# ================================
+#               LOGOUT
+# ================================
 @router.post("/logout")
 def logout(req: RefreshRequest):
     rt = req.refresh_token
     if rt in REFRESH_TOKENS:
         del REFRESH_TOKENS[rt]
-    # logout is best-effort for this simple implementation
-    return {"detail": "Logged out"}
+    return {"message": "Refresh token revoked"}
 
+
+# ================================
+#            GET PROFILE (AUTH)
+# ================================
 @router.get("/me")
-def me(current_user = Depends(lambda: None)):  # will be overridden below in main inclusion
-    # placeholder; actual dependency injection happens when included in app via deps.get_current_active_user
-    return {"detail": "ok"}
+def me(current_user = Depends(get_current_active_user)):
+    return {
+        "user_id": current_user.user_id,
+        "username": current_user.username,
+        "role": current_user.role,
+        "disabled": current_user.disabled
+    }
