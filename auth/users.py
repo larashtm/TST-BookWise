@@ -3,7 +3,6 @@ from passlib.context import CryptContext
 from uuid import UUID, uuid4
 from typing import Optional, Dict
 
-# Konfigurasi hashing password menggunakan bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class User:
@@ -16,13 +15,10 @@ class User:
 
 def hash_password(password: str) -> str:
     # Meng-hash password plaintext
-    # mengubah password asli yang dikirim pengguna menjadi hash sebelum disave
     return pwd_context.hash(password[:72])
 
-#membandingkan password yang bakal diketik user(plain_password) dengan password yang udah di save di save ke data base (hashed_password)
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # Mengecek kecocokan password plaintext dengan password yang sudah di-hash
-    return pwd_context.verify(plain_password[:72], hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool: #membandingkan password yang bakal diketik user(plain_password) dengan password yang udah di save di save ke data base (hashed_password)
+    return pwd_context.verify(plain_password[:72], hashed_password) #mengecek kecocokan
 
 # Data pengguna (dummy / contoh)
 # username: pengguna1 / password: pengguna123  (role: pengguna)
