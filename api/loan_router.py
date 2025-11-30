@@ -15,39 +15,10 @@ router = APIRouter(prefix="", tags=["Loans"])
 repo = InMemoryLoanRepository()
 policy = LoanPolicyService()
 
-@router.post("/loans", response_model=LoanResponse, status_code=201)
-def create_loan(req: LoanCreateRequest, current_user = Depends(require_role("peminjam"))):
-    """
-    Membuat loan baru — hanya peminjam yang boleh membuat peminjaman.
-    """
-    loan = Loan(BookId(req.bookId), UserId(req.userId))
-    due = policy.calculate_due_date()
-    loan.borrow(due)
-    repo.save(loan)
-    return LoanResponse(
-        loanId=loan.loanId,
-        bookId=loan.bookId.value,
-        userId=loan.userId.value,
-        status=loan.loanStatus.value,
-        createdAt=loan.createdAt,
-        dueDate=loan.dueDate.value if loan.dueDate else None
-    )
 
-@router.get("/loans/{loan_id}", response_model=LoanResponse)
-def get_loan(loan_id: UUID, current_user = Depends(allow_roles("peminjam", "pengguna"))):
-    loan = repo.findById(loan_id)
-    if not loan:
-        raise HTTPException(status_code=404, detail="Loan not found")
-    return LoanResponse(
-        loanId=loan.loanId,
-        bookId=loan.bookId.value,
-        userId=loan.userId.value,
-        status=loan.loanStatus.value,
-        createdAt=loan.createdAt,
-        dueDate=loan.dueDate.value if loan.dueDate else None
-    )
-
-# Example admin-like endpoint for 'pengguna' role to list all loans
+# ===============================
+# 1) TARUH /loans/all DI ATAS !!!
+# ===============================
 @router.get("/loans/all")
 def list_all_loans(current_user = Depends(require_role("pengguna"))):
     loans = repo.data.values()
@@ -62,3 +33,40 @@ def list_all_loans(current_user = Depends(require_role("pengguna"))):
         }
         for l in loans
     ]
+
+
+# ===============================
+# 2) Baru GET /loans/{loan_id}
+# ===============================
+@router.get("/loans/{loan_id}", response_model=LoanResponse)
+def get_loan(loan_id: UUID, current_user = Depends(allow_roles("peminjam", "pengguna"))):
+    loan = repo.findById(loan_id)
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    return LoanResponse(
+        loanId=loan.loanId,
+        bookId=loan.bookId.value,
+        userId=loan.userId.value,
+        status=loan.loanStatus.value,
+        createdAt=loan.createdAt,
+        dueDate=loan.dueDate.value if loan.dueDate else None
+    )
+
+
+# ===============================
+# 3) POST tetap di bawah
+# ===============================
+@router.post("/loans", response_model=LoanResponse, status_code=201)
+def create_loan(req: LoanCreateRequest, current_user = Depends(require_role("peminjam"))):
+    loan = Loan(BookId(req.bookId), UserId(req.userId))
+    due = policy.calculate_due_date()
+    loan.borrow(due)
+    repo.save(loan)
+    return LoanResponse(
+        loanId=loan.loanId,
+        bookId=loan.bookId.value,
+        userId=loan.userId.value,
+        status=loan.loanStatus.value,
+        createdAt=loan.createdAt,
+        dueDate=loan.dueDate.value if loan.dueDate else None
+    )
