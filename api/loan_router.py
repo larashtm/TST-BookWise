@@ -1,72 +1,140 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from uuid import UUID
-
+from typing import List
 from domain.loan import Loan
 from domain.book_id import BookId
 from domain.user_id import UserId
 from domain.loan_policy_service import LoanPolicyService
 from infrastructure.in_memory_loan_repository import InMemoryLoanRepository
 from schemas.loan_schema import LoanCreateRequest, LoanResponse
-
 from auth.deps import require_role, allow_roles, get_current_active_user
 
-router = APIRouter(prefix="", tags=["Loans"])
+router = APIRouter(prefix="", tags=["Loans"]) #tags=[loans] buat ngelompokin endpoint di API
 
 repo = InMemoryLoanRepository()
 policy = LoanPolicyService()
 
+def to_response(loan: Loan) -> dict:
+    return {
+        "loanId": loan.loanId,
+        "bookId": loan.bookId.value,
+        "userId": loan.userId.value,
+        "status": loan.loanStatus.value,
+        "createdAt": loan.createdAt,
+        "dueDate": loan.dueDate.value if loan.dueDate else None,
+        "verified": getattr(loan, "verified", False),
+        "approved": getattr(loan, "approved", False),
+        "return_initiated": getattr(loan, "return_initiated", False),
+    }
 
-# ===============================
-# 1) TARUH /loans/all DI ATAS !!!
-# ===============================
-@router.get("/loans/all")
-def list_all_loans(current_user = Depends(require_role("pengguna"))):
-    loans = repo.data.values()
-    return [
-        {
-            "loanId": l.loanId,
-            "bookId": l.bookId.value,
-            "userId": l.userId.value,
-            "status": l.loanStatus.value,
-            "createdAt": l.createdAt,
-            "dueDate": l.dueDate.value if l.dueDate else None
-        }
-        for l in loans
-    ]
+#endpoint create loan
+@router.post("/loans", response_model=LoanResponse, status_code=201)
+def create_loan(req: LoanCreateRequest, current_user = Depends(require_role("peminjam"))):
+    loan = Loan(BookId(req.bookId), UserId(req.userId))
+    due = policy.calculate_due_date()
+    # keep as REQUESTED so admin can verify/approve separately
+    repo.save(loan)
+    return to_response(loan)
 
-
-# ===============================
-# 2) Baru GET /loans/{loan_id}
-# ===============================
+#endpoint get loan by id (peminjam & pengguna)
 @router.get("/loans/{loan_id}", response_model=LoanResponse)
 def get_loan(loan_id: UUID, current_user = Depends(allow_roles("peminjam", "pengguna"))):
     loan = repo.findById(loan_id)
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
-    return LoanResponse(
-        loanId=loan.loanId,
-        bookId=loan.bookId.value,
-        userId=loan.userId.value,
-        status=loan.loanStatus.value,
-        createdAt=loan.createdAt,
-        dueDate=loan.dueDate.value if loan.dueDate else None
-    )
+    # Access control: peminjam only sees own loans (additional check)
+    user = current_user
+    if user.role == "peminjam" and str(loan.userId.value) != str(user.user_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return to_response(loan)
 
+#endpoint list loans punya peminjam
+@router.get("/loans/my", response_model=List[LoanResponse])
+def list_my_loans(current_user = Depends(require_role("peminjam"))):
+    user = current_user
+    loans = repo.findByUser(user.user_id)
+    return [to_response(l) for l in loans]
 
-# ===============================
-# 3) POST tetap di bawah
-# ===============================
-@router.post("/loans", response_model=LoanResponse, status_code=201)
-def create_loan(req: LoanCreateRequest, current_user = Depends(require_role("peminjam"))):
-    loan = Loan(BookId(req.bookId), UserId(req.userId))
-    due = policy.calculate_due_date()
-    loan.borrow(due)
-    repo.save(loan)
-    return LoanResponse(
-        loanId=loan.loanId,
-        bookId=loan.bookId.value,
-        userId=loan.userId.value,
-        status=loan.loanStatus.value,
-        createdAt=loan.createdAt,
-        dueDate=loan.dueDate.value if loan.dueDate else None
-    )
+#endpoint list semua loan(pengguna)
+@router.get("/loans/all", response_model=List[LoanResponse])
+def list_all_loans(current_user = Depends(require_role("pengguna"))):
+    loans = repo.list_all()
+    return [to_response(l) for l in loans]
+
+#admin aksi: verifikasi loan
+@router.post("/loans/{loan_id}/verify")
+def verify_loan(loan_id: UUID, current_user = Depends(require_role("pengguna"))):
+    loan = repo.findById(loan_id)
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    try:
+        loan.verify()
+        repo.save(loan)
+        return {"detail": "Loan verified"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+#admin apporve loan (nentuin due date dan status borrowed)
+@router.post("/loans/{loan_id}/approve")
+def approve_loan(loan_id: UUID, current_user = Depends(require_role("pengguna"))):
+    loan = repo.findById(loan_id)
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    try:
+        # Admin picks due date per policy
+        due = policy.calculate_due_date()
+        loan.approve(due)
+        repo.save(loan)
+        return {"detail": "Loan approved and distributed", "dueDate": due.value}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+#peminjam mulai proses pengembalian
+@router.post("/loans/{loan_id}/return")
+def initiate_return(loan_id: UUID, current_user = Depends(require_role("peminjam"))): #require_role: memastikan user harus punya role tertentu 
+    loan = repo.findById(loan_id)
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    user = current_user
+    if str(loan.userId.value) != str(user.user_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        loan.initiate_return()
+        repo.save(loan)
+        return {"detail": "Return initiated"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+#aksi admin: finalisasi pengembalian
+@router.post("/loans/{loan_id}/finalize-return")
+def finalize_return(loan_id: UUID, current_user = Depends(require_role("pengguna"))):
+    loan = repo.findById(loan_id)
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    try:
+        loan.finalize_return()
+        repo.save(loan)
+        return {"detail": "Return finalized"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+#endpoint perpanjangan masa pinjam
+from pydantic import BaseModel
+class ExtendRequest(BaseModel):
+    extra_days: int
+
+@router.post("/loans/{loan_id}/extend")
+def extend_loan(loan_id: UUID, req: ExtendRequest, current_user = Depends(require_role("peminjam"))):
+    loan = repo.findById(loan_id)
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    # only peminjam can request extension
+    user = current_user
+    if str(loan.userId.value) != str(user.user_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        new_due = loan.extend_loan(req.extra_days)
+        repo.save(loan)
+        return {"detail": "Extension applied", "newDueDate": new_due.value}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
