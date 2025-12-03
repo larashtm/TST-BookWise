@@ -2,12 +2,10 @@ from fastapi import FastAPI
 from fastapi.openapi.models import APIKey, APIKeyIn, SecuritySchemeType
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBearer
-
 from api.loan_router import router as loan_router
 from auth.auth_router import router as auth_router
 
 app = FastAPI(title="BookWise - Lending BC (with Auth)")
-
 bearer_scheme = HTTPBearer()
 
 @app.get("/")
