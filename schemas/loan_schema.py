@@ -1,5 +1,7 @@
+# schemas/loan_schema.py
 from pydantic import BaseModel
 from uuid import UUID
+from typing import Optional
 from datetime import datetime, date
 
 class LoanCreateRequest(BaseModel):
@@ -12,4 +14,7 @@ class LoanResponse(BaseModel):
     userId: UUID
     status: str
     createdAt: datetime
-    dueDate: date | None = None
+    dueDate: Optional[date] = None
+    verified: Optional[bool] = False
+    approved: Optional[bool] = False
+    return_initiated: Optional[bool] = False
