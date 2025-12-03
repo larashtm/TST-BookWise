@@ -46,8 +46,7 @@ def create_loan(req: LoanCreateRequest, current_user=Depends(require_role("pemin
 # ================================================================
 @router.get("/loans/my", response_model=List[LoanResponse])
 def list_my_loans(current_user=Depends(require_role("peminjam"))):
-    user = current_user
-    loans = repo.findByUser(user.user_id)
+    loans = repo.findByUser(current_user.user_id)
     return [to_response(l) for l in loans]
 
 # ================================================================
@@ -66,9 +65,7 @@ def get_loan(loan_id: UUID, current_user=Depends(allow_roles("peminjam", "penggu
     loan = repo.findById(loan_id)
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
-
-    user = current_user
-    if user.role == "peminjam" and str(loan.userId.value) != str(user.user_id):
+    if current_user.role == "peminjam" and str(loan.userId.value) != str(current_user.user_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     return to_response(loan)
 
@@ -111,8 +108,7 @@ def initiate_return(loan_id: UUID, current_user=Depends(require_role("peminjam")
     loan = repo.findById(loan_id)
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
-    user = current_user
-    if str(loan.userId.value) != str(user.user_id):
+    if str(loan.userId.value) != str(current_user.user_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     try:
         loan.initiate_return()
@@ -147,8 +143,7 @@ def extend_loan(loan_id: UUID, req: ExtendRequest, current_user=Depends(require_
     loan = repo.findById(loan_id)
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
-    user = current_user
-    if str(loan.userId.value) != str(user.user_id):
+    if str(loan.userId.value) != str(current_user.user_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     try:
         new_due = loan.extend_loan(req.extra_days)
