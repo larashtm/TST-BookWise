@@ -65,7 +65,6 @@ class Loan:
     def extend_loan(self, extra_days: int):
         if not self.dueDate:
             raise ValueError("No due date to extend")
-        #menghitung tanggal jatuh tempo
         new_date = self.dueDate.value + timedelta(days=extra_days)
         self.dueDate = DueDate(new_date)
         return self.dueDate
