@@ -42,11 +42,13 @@ jobs:
     
     - name: Check code formatting with black
       run: |
-        black --check --diff . || true
+        black --check --diff .
+      continue-on-error: true
     
     - name: Check import sorting with isort
       run: |
-        isort --check-only --diff . || true
+        isort --check-only --diff .
+      continue-on-error: true
 
   test:
     name: Run Tests
@@ -83,7 +85,11 @@ jobs:
       run: |
         pytest --cov --cov-report=xml --cov-report=html --cov-report=term-missing -v
     
-    - name: Upload coverage reports
+    - name: Check coverage threshold
+      run: |
+        coverage report --fail-under=95
+    
+    - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
       if: matrix.python-version == '3.10'
       with:
@@ -98,6 +104,13 @@ jobs:
       with:
         name: coverage-report
         path: htmlcov/
+    
+    - name: Comment coverage on PR
+      uses: py-cov-action/python-coverage-comment-action@v3
+      if: github.event_name == 'pull_request' && matrix.python-version == '3.10'
+      with:
+        GITHUB_TOKEN: ${{ github.token }}
+      continue-on-error: true
 
   security:
     name: Security Scan
@@ -121,10 +134,12 @@ jobs:
     - name: Run safety check
       run: |
         safety check --json || true
+      continue-on-error: true
     
     - name: Run bandit security scan
       run: |
         bandit -r . -f json -o bandit-report.json || true
+      continue-on-error: true
     
     - name: Upload security reports
       uses: actions/upload-artifact@v3
