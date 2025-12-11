@@ -10,12 +10,30 @@ from fastapi.security import HTTPBearer
 from api.loan_router import router as loan_router
 from auth.auth_router import router as auth_router
 
-app = FastAPI(title="BookWise - Lending BC (with Auth)")
+app = FastAPI(
+    title="BookWise - Lending BC (with Auth)",
+    description="API for BookWise digital book lending platform",
+    version="1.0.0"
+)
+
 bearer_scheme = HTTPBearer()
 
 @app.get("/")
 def root():
-    return {"message": "BookWise API is running"}
+    return {
+        "message": "BookWise API is running",
+        "status": "healthy",
+        "endpoints": {
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "auth": "/auth/*",
+            "loans": "/loans/*"
+        }
+    }
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 app.include_router(auth_router)
 app.include_router(loan_router)
@@ -27,6 +45,7 @@ def custom_openapi():
     openapi_schema = get_openapi(
         title="BookWise - Lending BC (with Auth)",
         version="1.0.0",
+        description="Digital book lending platform with JWT authentication",
         routes=app.routes,
     )
 
@@ -36,12 +55,15 @@ def custom_openapi():
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT",
+        "description": "Enter your JWT token"
     }
 
     for path, path_item in openapi_schema["paths"].items():
         for method, details in path_item.items():
             if method in ["get", "post", "put", "patch", "delete"]:
-                details.setdefault("security", [{"BearerAuth": []}])
+                # Skip login endpoint from requiring auth
+                if "/auth/login" not in path:
+                    details.setdefault("security", [{"BearerAuth": []}])
 
     app.openapi_schema = openapi_schema
     return openapi_schema
