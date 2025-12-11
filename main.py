@@ -45,3 +45,8 @@ def custom_openapi():
 
 
 app.openapi = custom_openapi
+
+# Vercel serverless function handler
+if __name__ != "__main__":
+    # This is for Vercel
+    handler = app
