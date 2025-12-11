@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.openapi.models import APIKey, APIKeyIn, SecuritySchemeType
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBearer
 from api.loan_router import router as loan_router
@@ -12,7 +11,6 @@ bearer_scheme = HTTPBearer()
 def root():
     return {"message": "BookWise API is running"}
 
-# Register routers
 app.include_router(auth_router)
 app.include_router(loan_router)
 
@@ -26,27 +24,22 @@ def custom_openapi():
         routes=app.routes,
     )
 
-    openapi_schema["components"]["securitySchemes"] = {
-        "BearerAuth": {
-            "type": "http",
-            "scheme": "bearer",
-            "bearerFormat": "JWT"
-        }
+    openapi_schema.setdefault("components", {})
+    openapi_schema["components"].setdefault("securitySchemes", {})
+    openapi_schema["components"]["securitySchemes"]["BearerAuth"] = {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
     }
 
-    for path in openapi_schema["paths"]:
-        for method in openapi_schema["paths"][path]:
-            openapi_schema["paths"][path][method]["security"] = [
-                {"BearerAuth": []}
-            ]
+    for path, path_item in openapi_schema["paths"].items():
+        for method, details in path_item.items():
+            if method in ["get", "post", "put", "patch", "delete"]:
+                details.setdefault("security", [{"BearerAuth": []}])
 
     app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
+    return openapi_schema
 
 app.openapi = custom_openapi
 
-# Vercel serverless function handler
-if __name__ != "__main__":
-    # This is for Vercel
-    handler = app
+handler = app
