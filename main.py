@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent))
+
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBearer
@@ -42,4 +48,5 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+# Vercel handler
 handler = app
