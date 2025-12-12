@@ -5,11 +5,7 @@
   "builds": [
     {
       "src": "main.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "15mb",
-        "runtime": "python3.10"
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
@@ -19,14 +15,6 @@
     }
   ],
   "env": {
-    "PYTHONPATH": ".",
-    "ENVIRONMENT": "production"
-  },
-  "regions": ["sin1"],
-  "functions": {
-    "main.py": {
-      "memory": 1024,
-      "maxDuration": 10
-    }
+    "PYTHONPATH": "."
   }
 }
