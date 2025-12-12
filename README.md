@@ -152,6 +152,9 @@ curl -X GET "http://127.0.0.1:8000/loans/{loan_id}"
 - **Swagger UI**: http://127.0.0.1:8000/docs
 - **ReDoc**: http://127.0.0.1:8000/redoc
 
+
+
+
 ## Author
 
 **Larashtm**
