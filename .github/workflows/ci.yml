@@ -12,43 +12,41 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    
-    - name: Cache pip packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements-dev.txt
-    
-    - name: Lint with flake8
-      run: |
-        # Stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    
-    - name: Check code formatting with black
-      run: |
-        black --check --diff .
-      continue-on-error: true
-    
-    - name: Check import sorting with isort
-      run: |
-        isort --check-only --diff .
-      continue-on-error: true
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      
+      - name: Lint with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      
+      - name: Check code formatting with black
+        run: |
+          black --check --diff .
+        continue-on-error: true
+      
+      - name: Check import sorting with isort
+        run: |
+          isort --check-only --diff .
+        continue-on-error: true
 
   test:
     name: Run Tests
@@ -60,57 +58,57 @@ jobs:
         python-version: ['3.10', '3.11', '3.12']
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    
-    - name: Cache pip packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.python-version }}-
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements-dev.txt
-    
-    - name: Run tests with pytest
-      run: |
-        pytest --cov --cov-report=xml --cov-report=html --cov-report=term-missing -v
-    
-    - name: Check coverage threshold
-      run: |
-        coverage report --fail-under=95
-    
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v4
-      if: matrix.python-version == '3.10'
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
-    
-    - name: Archive coverage HTML report
-      uses: actions/upload-artifact@v4
-      if: matrix.python-version == '3.10'
-      with:
-        name: coverage-report
-        path: htmlcov/
-    
-    - name: Comment coverage on PR
-      uses: py-cov-action/python-coverage-comment-action@v4
-      if: github.event_name == 'pull_request' && matrix.python-version == '3.10'
-      with:
-        GITHUB_TOKEN: ${{ github.token }}
-      continue-on-error: true
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      
+      - name: Run tests with pytest
+        run: |
+          pytest --cov --cov-report=xml --cov-report=html --cov-report=term-missing -v
+      
+      - name: Check coverage threshold
+        run: |
+          coverage report --fail-under=95
+      
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.10'
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+      
+      - name: Archive coverage HTML report
+        uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.10'
+        with:
+          name: coverage-report
+          path: htmlcov/
+      
+      - name: Comment coverage on PR
+        uses: py-cov-action/python-coverage-comment-action@v3
+        if: github.event_name == 'pull_request' && matrix.python-version == '3.10'
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+        continue-on-error: true
 
   security:
     name: Security Scan
@@ -118,35 +116,35 @@ jobs:
     needs: lint
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install safety bandit
-    
-    - name: Run safety check
-      run: |
-        safety check --json || true
-      continue-on-error: true
-    
-    - name: Run bandit security scan
-      run: |
-        bandit -r . -f json -o bandit-report.json || true
-      continue-on-error: true
-    
-    - name: Upload security reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: security-reports
-        path: bandit-report.json
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit
+      
+      - name: Run safety check
+        run: |
+          safety check --json || true
+        continue-on-error: true
+      
+      - name: Run bandit security scan
+        run: |
+          bandit -r . -f json -o bandit-report.json || true
+        continue-on-error: true
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: bandit-report.json
 
   build-status:
     name: Build Status Check
@@ -155,17 +153,17 @@ jobs:
     if: always()
     
     steps:
-    - name: Check all jobs status
-      run: |
-        if [ "${{ needs.lint.result }}" == "success" ] && \
-           [ "${{ needs.test.result }}" == "success" ] && \
-           [ "${{ needs.security.result }}" == "success" ]; then
-          echo "✅ All CI checks passed!"
-          exit 0
-        else
-          echo "❌ Some CI checks failed"
-          echo "Lint: ${{ needs.lint.result }}"
-          echo "Test: ${{ needs.test.result }}"
-          echo "Security: ${{ needs.security.result }}"
-          exit 1
-        fi
+      - name: Check all jobs status
+        run: |
+          if [ "${{ needs.lint.result }}" == "success" ] && \
+             [ "${{ needs.test.result }}" == "success" ] && \
+             [ "${{ needs.security.result }}" == "success" ]; then
+            echo "✅ All CI checks passed!"
+            exit 0
+          else
+            echo "❌ Some CI checks failed"
+            echo "Lint: ${{ needs.lint.result }}"
+            echo "Test: ${{ needs.test.result }}"
+            echo "Security: ${{ needs.security.result }}"
+            exit 1
+          fi
