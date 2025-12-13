@@ -5,3 +5,6 @@ class LoanStatus(str, Enum):
     BORROWED = "borrowed"
     RETURNED = "returned"
     OVERDUE = "overdue"
+    
+    def __str__(self):
+        return self.value

@@ -211,7 +211,8 @@ class TestOAuth2Scheme:
 
     def test_oauth2_scheme_token_url(self):
         """Test that oauth2_scheme has correct token URL"""
-        assert oauth2_scheme.tokenUrl == "/auth/login"
+        # ✅ FIXED: Use model_dump() to get the URL
+        assert oauth2_scheme.model.flows.password.tokenUrl == "/auth/login"
 
 
 class TestDepsIntegration:

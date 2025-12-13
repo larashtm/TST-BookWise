@@ -1,3 +1,4 @@
+
 # BookWise - Platform Peminjaman Buku Digital
 
 Proyek Final Teknologi Sistem Terintegrasi (TST) - BookWise adalah platform peminjaman buku digital berbasis Domain-Driven Design (DDD) menggunakan FastAPI.
@@ -151,6 +152,31 @@ curl -X GET "http://127.0.0.1:8000/loans/{loan_id}"
   Setelah aplikasi berjalan, buka browser:
 - **Swagger UI**: http://127.0.0.1:8000/docs
 - **ReDoc**: http://127.0.0.1:8000/redoc
+
+## 🚀 Deployment ke Vercel
+
+### Quick Deploy
+
+**Metode 1: Otomatis dengan Script**
+```powershell
+.\deploy.ps1
+```
+
+**Metode 2: Manual via Dashboard**
+1. Push kode ke GitHub
+2. Buka [vercel.com/new](https://vercel.com/new)
+3. Import repository TST-BookWise
+4. Set Environment Variable: `SECRET_KEY`
+5. Deploy!
+
+**Generate Secret Key:**
+```powershell
+python generate_secret_key.py
+```
+
+📖 **Panduan Lengkap**: Lihat [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+
+---
 
 ## Author
 
