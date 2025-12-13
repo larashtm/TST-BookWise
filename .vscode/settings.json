@@ -1,0 +1,8 @@
+{
+    "python-envs.pythonProjects": [],
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python.defaultInterpreterPath": "C:/Users/laras/Bahasa C/SEMESTER 5/II3160_TST/TST-BookWise/.venv/Scripts/python.exe",
+    "python.analysis.extraPaths": [
+        "."
+    ]
+}
