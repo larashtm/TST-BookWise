@@ -1,6 +1,11 @@
 # BookWise - Platform Peminjaman Buku Digital
 
-Proyek Final Teknologi Sistem Terintegrasi (TST) - BookWise adalah platform peminjaman buku digital berbasis Domain-Driven Design (DDD) menggunakan FastAPI.
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-green)
+
+BookWise adalah proyek final mata kuliah Teknologi Sistem Terintegrasi (TST), 
+sebuah platform peminjaman buku digital berbasis Domain-Driven Design (DDD) 
+yang dibangun menggunakan FastAPI.
 
 ## Deskripsi Bounded Context
 
@@ -102,7 +107,7 @@ bookwise/
 └── requirements.txt
 ```
 
-## Testing Manual
+## Manual Testing
 
 ### Menggunakan Swagger UI (Recommended)
 
@@ -148,7 +153,7 @@ curl -X GET "http://127.0.0.1:8000/loans/{loan_id}"
 - **Infrastructure Layer**: Technical implementation (database, dll)
 
 ## Testing
-  Setelah aplikasi berjalan, buka browser:
+Setelah aplikasi berjalan, buka browser:
 - **Swagger UI**: http://127.0.0.1:8000/docs
 - **ReDoc**: http://127.0.0.1:8000/redoc
 
