@@ -114,5 +114,6 @@ TST-BookWise/
 ## Flow 
 | Activity Peminjam | Activity Pengguna |
 | :---: | :---: |
-| <img src="https://raw.githubusercontent.com/larashtm/TST-BookWise/feature/activity_peminjam.png" width="300"> | <img src="https://raw.githubusercontent.com/larashtm/TST-BookWise/feature/activity_pengguna.png" width="300"> |
-> Diagram aktivitas BookWise disusun berdasarkan peran (role) dalam sistem, yaitu peminjam dan pengguna. Peminjam memiliki akses untuk melakukan peminjaman buku, melihat status peminjaman (my loan), melakukan pengembalian, serta mengajukan perpanjangan. Sementara itu, pengguna berperan dalam melihat daftar peminjaman, melakukan verifikasi, serta menyetujui permintaan peminjaman.
+| <img src="https://raw.githubusercontent.com/larashtm/TST-BookWise/main/activity_peminjam.png" width="300"> | <img src="https://raw.githubusercontent.com/larashtm/TST-BookWise/main/activity_pengguna.png" width="300"> |
+
+> Diagram aktivitas BookWise disusun berdasarkan peran (role) dalam sistem, yaitu peminjam dan pengguna.
