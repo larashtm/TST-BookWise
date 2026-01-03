@@ -1,11 +1,16 @@
-# BookWise - Platform Peminjaman Buku Digital
-
+<div align="center">
+  <img src="https://github.com/larashtm/TST-BookWise/blob/main/logo.png" alt="BelajarIndo Logo" width="7600/>
+    
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-green)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)
+![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)
+![Tests](https://img.shields.io/badge/tests-passing-success)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-BookWise adalah proyek final mata kuliah Teknologi Sistem Terintegrasi (TST), 
-sebuah platform peminjaman buku digital berbasis Domain-Driven Design (DDD) 
-yang dibangun menggunakan FastAPI.
+</div>
+
+---
+> BookWise adalah API backend untuk sistem peminjaman buku digital yang menerapkan prinsip Domain-Driven Design (DDD). Sistem ini mengelola proses peminjaman buku dari request hingga pengembalian dengan workflow yang terstruktur melibatkan dua role: Peminjam (borrower) dan Pengguna (admin/librarian).
 
 ## Deskripsi Bounded Context
 
@@ -55,114 +60,59 @@ Setelah aplikasi berjalan, buka browser:
 - **Swagger UI**: http://127.0.0.1:8000/docs
 - **ReDoc**: http://127.0.0.1:8000/redoc
 
+### User Default untuk Testing
+
+**Peminjam**:
+- Username: `peminjam1`
+- Password: `pinjam123`
+
+**Pengguna (Admin)**:
+- Username: `pengguna1`
+- Password: `pengguna123`
+
 ## API Endpoints
 
-### 1. Create Loan (Pinjam Buku)
-```bash
-POST /loans
-Content-Type: application/json
+### Authentication
 
-{
-  "bookId": "123e4567-e89b-12d3-a456-426614174000",
-  "userId": "987fcdeb-51a2-43e7-9876-543210fedcba"
-}
-```
+| Method | Endpoint | Deskripsi | Role |
+|--------|----------|-----------|------|
+| POST | `/auth/login` | Login dan dapatkan token | Public |
+| POST | `/auth/refresh` | Refresh access token | Public |
+| POST | `/auth/logout` | Logout (revoke refresh token) | Public |
+| GET | `/auth/me` | Get user info | Authenticated |
+### Loan Management
 
-**Response:**
-```json
-{
-  "loanId": "uuid-generated",
-  "bookId": "123e4567-e89b-12d3-a456-426614174000",
-  "userId": "987fcdeb-51a2-43e7-9876-543210fedcba",
-  "status": "borrowed",
-  "createdAt": "2025-11-15T10:30:00",
-  "dueDate": "2025-11-22"
-}
-```
+| Method | Endpoint | Deskripsi | Role |
+|--------|----------|-----------|------|
+| POST | `/loans` | Buat request peminjaman | Peminjam |
+| GET | `/loans/my` | List peminjaman saya | Peminjam |
+| GET | `/loans/all` | List semua peminjaman | Pengguna |
+| GET | `/loans/{id}` | Detail peminjaman | Peminjam/Pengguna |
+| POST | `/loans/{id}/verify` | Verifikasi request | Pengguna |
+| POST | `/loans/{id}/approve` | Setujui peminjaman | Pengguna |
+| POST | `/loans/{id}/return` | Inisiasi pengembalian | Peminjam |
+| POST | `/loans/{id}/finalize-return` | Finalisasi pengembalian | Pengguna |
+| POST | `/loans/{id}/extend` | Perpanjang peminjaman | Peminjam |
+### General
 
-### 2. Get Loan by ID
-```bash
-GET /loans/{loan_id}
-```
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/` | Root endpoint |
+| GET | `/health` | Health check |
 
 ## Struktur Proyek
 ```
-bookwise/
-├── api/                    
-│   └── loan_router.py
-├── domain/                 
-│   ├── loan.py           
-│   ├── book_id.py
-│   ├── user_id.py
-│   ├── due_date.py
-│   ├── loan_status.py
-│   ├── loan_repository.py
-│   └── loan_policy_service.py
-├── infrastructure/
-│   └── in_memory_loan_repository.py
-├── schemas/
-│   └── loan_schema.py
-├── docs/
-├── main.py
-└── requirements.txt
+TST-BookWise/
+├── api/                        # API routers yang menangani HTTP requests dan responses
+├── auth/                       # Module autentikasi lengkap dengan JWT token management, user database, dan role-based access control dependencies
+├── domain/                     # Core business logic aplikasi. Berisi entities, value objects, domain services, dan repository interfaces
+├── infrastructure/             # Infrastructure Layer
+├── schemas/                    # Pydantic Schemas untuk API
+├── tests/                      # Unit & Integration Tests
 ```
 
-## Manual Testing
-
-### Menggunakan Swagger UI (Recommended)
-
-1. Buka http://127.0.0.1:8000/docs
-2. Klik **POST /loans** → **Try it out**
-3. Masukkan JSON request
-4. Klik **Execute**
-5. Copy `loanId` dari response
-6. Test **GET /loans/{loan_id}** dengan `loanId` tersebut
-
-### Menggunakan cURL
-
-**Create Loan:**
-```bash
-curl -X POST "http://127.0.0.1:8000/loans" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "bookId": "123e4567-e89b-12d3-a456-426614174000",
-    "userId": "987fcdeb-51a2-43e7-9876-543210fedcba"
-  }'
-```
-
-**Get Loan:**
-```bash
-curl -X GET "http://127.0.0.1:8000/loans/{loan_id}"
-```
-
-## Konsep DDD yang Diterapkan
-
-### 1. Strategic Design
-- **Bounded Context**: Loan Management
-- **Ubiquitous Language**: Loan, Borrow, Return, Overdue, Due Date
-
-### 2. Tactical Design
-- **Entity/Aggregate**: `Loan` sebagai aggregate root dengan identity `loanId`
-- **Value Objects**: `BookId`, `UserId`, `DueDate`, `LoanStatus` (immutable, no identity)
-- **Domain Service**: `LoanPolicyService` untuk business rule yang tidak fit di entity
-- **Repository Pattern**: Abstraksi persistensi dengan interface
-
-### 3. Layering
-- **Domain Layer**: Pure business logic, tidak ada dependency eksternal
-- **Application Layer**: Orchestration (via API router)
-- **Infrastructure Layer**: Technical implementation (database, dll)
-
-## Testing
-Setelah aplikasi berjalan, buka browser:
-- **Swagger UI**: http://127.0.0.1:8000/docs
-- **ReDoc**: http://127.0.0.1:8000/redoc
-
-
-
-
-## Author
-
-**Larashtm**
-- GitHub: [@larashtm](https://github.com/larashtm)
-- Mata Kuliah: II3160 - Teknologi Sistem Terintegrasi
-- Dosen: Ir. Daniel Wiyogo Dwiputro, S.T., M.T.
+## Flow 
+| Activity Peminjam | Activity Pengguna |
+| :---: | :---: |
+| <img src="https://raw.githubusercontent.com/larashtm/TST-BookWise/feature/activity_peminjam.png" width="300"> | <img src="https://raw.githubusercontent.com/larashtm/TST-BookWise/feature/activity_pengguna.png" width="300"> |
+> Diagram aktivitas BookWise disusun berdasarkan peran (role) dalam sistem, yaitu peminjam dan pengguna. Peminjam memiliki akses untuk melakukan peminjaman buku, melihat status peminjaman (my loan), melakukan pengembalian, serta mengajukan perpanjangan. Sementara itu, pengguna berperan dalam melihat daftar peminjaman, melakukan verifikasi, serta menyetujui permintaan peminjaman.
