@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/larashtm/TST-BookWise/blob/main/logo.png" alt="BelajarIndo Logo" width="7600/>
+  <img src="https://github.com/larashtm/TST-BookWise/blob/main/logo.png" alt="BelajarIndo Logo" width="700"/>
     
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)
